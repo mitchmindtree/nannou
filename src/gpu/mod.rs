@@ -8,6 +8,8 @@ use vulkano::instance::debug::{DebugCallback, DebugCallbackCreationError, Messag
 use vulkano::instance::loader::{FunctionPointers, Loader};
 use vulkano_win;
 
+mod render_pass;
+
 /// The default application name used with the default `ApplicationInfo`.
 pub const DEFAULT_APPLICATION_NAME: &'static str = "nannou-app";
 
