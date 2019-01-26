@@ -1503,10 +1503,10 @@ fn cleanup_unused_gpu_resources_for_window(app: &App, window_id: window::Id) {
     let windows = app.windows.borrow();
     let mut guard = windows[&window_id]
         .swapchain
-        .previous_frame_end
+        .previous_frame_ends
         .lock()
-        .expect("failed to lock `previous_frame_end`");
-    if let Some(future) = guard.as_mut() {
+        .expect("failed to lock `previous_frame_ends`");
+    for future in guard.iter_mut() {
         future.cleanup_finished();
     }
 }
@@ -2009,18 +2009,19 @@ where
     let mut windows = app.windows.borrow_mut();
     let window = windows.get_mut(&window_id).expect("no window for id");
 
-    // Wait for the previous frame presentation to be finished to avoid out-pacing the GPU on macos.
-    if let Some(mut previous_frame_fence_signal_future) = window
-        .swapchain
-        .previous_frame_end
-        .lock()
-        .expect("failed to lock `previous_frame_end`")
-        .take()
+    // Wait for the oldest frame presentation to be finished to avoid out-pacing the GPU on macos.
     {
-        previous_frame_fence_signal_future.cleanup_finished();
-        previous_frame_fence_signal_future
-            .wait(None)
-            .expect("failed to wait for `previous_frame_end` future to signal fence");
+        let mut guard = window
+            .swapchain
+            .previous_frame_ends
+            .lock()
+            .expect("failed to lock `previous_frame_ends`");
+        while guard.len() as u32 >= swapchain.num_images() {
+            // Pop the oldes from the front.
+            let mut f = guard.pop_front().expect("cannot `pop_front` `previous_frame_ends` future");
+            f.cleanup_finished();
+            f.wait(None).expect("failed to wait for `previous_frame_ends` future to signal fence");
+        }
     }
 
     // The future associated with the end of the current frame.
@@ -2050,11 +2051,12 @@ where
         }
     };
 
-    *window
+    window
         .swapchain
-        .previous_frame_end
+        .previous_frame_ends
         .lock()
-        .expect("failed to acquire `previous_frame_end` lock") = current_frame_end;
+        .expect("failed to acquire `previous_frame_ends` lock")
+        .extend(current_frame_end);
 }
 
 // Acquire the next swapchain image for the given window and draw to it using the user's

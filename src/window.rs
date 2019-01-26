@@ -7,6 +7,7 @@ use frame::Frame;
 use geom;
 use geom::{Point2, Vector2};
 use std::any::Any;
+use std::collections::VecDeque;
 use std::{cmp, env, fmt, ops};
 use std::error::Error as StdError;
 use std::path::PathBuf;
@@ -250,8 +251,11 @@ pub(crate) struct WindowSwapchain {
     // long as they are in use by the GPU.
     //
     // Destroying the `GpuFuture` blocks until the GPU is finished executing it. In order to avoid
-    // that, we store the submission of the previous frame here.
-    pub(crate) previous_frame_end: Mutex<Option<FenceSignalFuture<Box<GpuFuture>>>>,
+    // that, we store a number of "previous-frame-completion-future"s in a list where the number of
+    // futures stored is never greater than the total number of swapchain images.
+    //
+    // New futures are pushed to the back. The oldes futures are popped from the front.
+    pub(crate) previous_frame_ends: Mutex<VecDeque<FenceSignalFuture<Box<GpuFuture>>>>,
 }
 
 /// Swapchain building parameters for which Nannou will provide a default if unspecified.
@@ -951,14 +955,14 @@ impl<'app> Builder<'app> {
 
         let window_id = surface.window().id();
         let needs_recreation = AtomicBool::new(false);
-        let previous_frame_end = Mutex::new(None);
+        let previous_frame_ends = Mutex::new(VecDeque::new());
         let frame_count = 0;
         let swapchain = Arc::new(WindowSwapchain {
             needs_recreation,
             frame_created: frame_count,
             swapchain,
             images,
-            previous_frame_end,
+            previous_frame_ends,
         });
         let window = Window {
             queue,
@@ -1331,18 +1335,22 @@ impl Window {
         new_swapchain: Arc<Swapchain>,
         new_images: Vec<Arc<SwapchainImage>>,
     ) {
-        let previous_frame_end = self
-            .swapchain
-            .previous_frame_end
-            .lock()
-            .expect("failed to lock `previous_frame_end`")
-            .take();
+        // Take the `previous_frame_ends` futures for the new `WindowSwapchain`..
+        let previous_frame_ends = {
+            let mut guard = self
+                .swapchain
+                .previous_frame_ends
+                .lock()
+                .expect("failed to lock `previous_frame_ends`");
+            std::mem::replace(&mut*guard, VecDeque::new())
+        };
+
         self.swapchain = Arc::new(WindowSwapchain {
             needs_recreation: AtomicBool::new(false),
             frame_created: self.frame_count,
             swapchain: new_swapchain,
             images: new_images,
-            previous_frame_end: Mutex::new(previous_frame_end),
+            previous_frame_ends: Mutex::new(previous_frame_ends),
         });
     }
 }
