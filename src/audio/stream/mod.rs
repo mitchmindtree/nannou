@@ -13,6 +13,9 @@ pub mod output;
 /// Items related to input audio streams.
 pub mod input;
 
+/// The nannou audio stream envelope and FFT detectors.
+pub mod detector;
+
 /// Items related to duplex (synchronised input/output) audio streams.
 ///
 /// *Progress is currently pending implementation of input audio streams in CPAL.*
@@ -36,7 +39,7 @@ pub(crate) struct LoopContext {
 }
 
 /// A clone-able handle around an audio stream.
-pub struct Stream<M> {
+pub struct Stream<M = ()> {
     /// A channel for sending model updates to the audio thread.
     update_tx: mpsc::Sender<Box<FnMut(&mut M) + 'static + Send>>,
     /// A channel used for sending through a new buffer processing callback to the event loop.
@@ -48,7 +51,7 @@ pub struct Stream<M> {
 }
 
 // Data shared between each `Stream` handle to a single stream.
-struct Shared<M> {
+struct Shared<M = ()> {
     // The user's audio model
     model: Arc<Mutex<Option<M>>>,
     // A unique ID associated with this stream on the cpal EventLoop.
@@ -60,7 +63,7 @@ struct Shared<M> {
 }
 
 /// Stream building parameters that are common between input and output streams.
-pub struct Builder<M, S = f32> {
+pub struct Builder<M = (), S = f32> {
     pub(crate) event_loop: Arc<cpal::EventLoop>,
     pub(crate) process_fn_tx: mpsc::Sender<ProcessFnMsg>,
     pub model: M,

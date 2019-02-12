@@ -2,6 +2,7 @@ use audio::cpal;
 use audio::sample::{Sample, ToSample};
 use audio::stream;
 use audio::{Buffer, Device, Requester, Stream};
+use std::marker::PhantomData;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -10,7 +11,7 @@ use std::sync::{Arc, Mutex};
 pub trait RenderFn<M, S>: Fn(&mut M, &mut Buffer<S>) {}
 impl<M, S, F> RenderFn<M, S> for F where F: Fn(&mut M, &mut Buffer<S>) {}
 
-pub struct Builder<M, F, S = f32> {
+pub struct Builder<M = (), S = f32, F = fn(&mut M, &mut Buffer<S>)> {
     pub builder: super::Builder<M, S>,
     pub render: F,
 }
@@ -27,7 +28,70 @@ impl Iterator for Devices {
     }
 }
 
-impl<M, F, S> Builder<M, F, S> {
+/// An empty function used as the default capture function if none was specified. 
+pub fn default_render_fn<S>(_model: &mut (), _buffer: &mut Buffer<S>) {}
+
+impl<M, S, F> Builder<M, S, F> {
+    /// The "model" that represents the state of the program on the audio thread.
+    pub fn model<M2>(self, model: M2) -> Builder<M2, S, F> {
+        let Builder {
+            render,
+            builder: super::Builder {
+                event_loop,
+                process_fn_tx,
+                sample_rate,
+                channels,
+                frames_per_buffer,
+                device,
+                sample_format,
+                ..
+            },
+        } = self;
+        Builder {
+            render,
+            builder: super::Builder {
+                event_loop,
+                process_fn_tx,
+                model,
+                sample_rate,
+                channels,
+                frames_per_buffer,
+                device,
+                sample_format,
+            }
+        }
+    }
+
+    /// Specify a function to use for handling buffers of audio input.
+    pub fn render<F2, S2>(self, render: F2) -> Builder<M, S2, F2> {
+        let Builder {
+            builder: super::Builder {
+                model,
+                event_loop,
+                process_fn_tx,
+                sample_rate,
+                channels,
+                frames_per_buffer,
+                device,
+                ..
+            },
+            ..
+        } = self;
+        Builder {
+            render,
+            builder: super::Builder {
+                model,
+                event_loop,
+                process_fn_tx,
+                sample_rate,
+                channels,
+                frames_per_buffer,
+                device,
+                sample_format: PhantomData,
+            }
+        }
+    }
+
     pub fn sample_rate(mut self, sample_rate: u32) -> Self {
         assert!(sample_rate > 0);
         self.builder.sample_rate = Some(sample_rate);

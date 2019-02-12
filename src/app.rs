@@ -1008,11 +1008,11 @@ impl Audio {
     ///
     /// If this is the first time a stream has been created, this method will spawn the
     /// `cpal::EventLoop::run` method on its own thread, ready to run built streams.
-    pub fn new_input_stream<M, F, S>(
+    pub fn new_input_stream<M, S, F>(
         &self,
         model: M,
         capture: F,
-    ) -> audio::stream::input::Builder<M, F, S> {
+    ) -> audio::stream::input::Builder<M, S, F> {
         audio::stream::input::Builder {
             capture,
             builder: self.new_stream(model),
@@ -1023,11 +1023,11 @@ impl Audio {
     ///
     /// If this is the first time a stream has been created, this method will spawn the
     /// `cpal::EventLoop::run` method on its own thread, ready to run built streams.
-    pub fn new_output_stream<M, F, S>(
+    pub fn new_output_stream<M, S, F>(
         &self,
         model: M,
         render: F,
-    ) -> audio::stream::output::Builder<M, F, S> {
+    ) -> audio::stream::output::Builder<M, S, F> {
         audio::stream::output::Builder {
             render,
             builder: self.new_stream(model),
