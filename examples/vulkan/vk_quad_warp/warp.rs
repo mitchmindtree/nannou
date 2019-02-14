@@ -51,8 +51,8 @@ pub(crate) fn warp(app: &App) -> Warp {
                     store: Store,
                     format: app.main_window().swapchain().format(),
                     samples: app.main_window().msaa_samples(),
-                    initial_layout: ImageLayout::PresentSrc,
-                    final_layout: ImageLayout::PresentSrc,
+                    initial_layout: ImageLayout::Undefined,
+                    final_layout: ImageLayout::ColorAttachmentOptimal,
                 }
             },
             pass: {

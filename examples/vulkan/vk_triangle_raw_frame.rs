@@ -88,7 +88,7 @@ fn model(app: &App) -> Model {
                     format: app.main_window().swapchain().format(),
                     // TODO:
                     samples: 1,
-                    initial_layout: ImageLayout::PresentSrc,
+                    initial_layout: ImageLayout::Undefined,
                     final_layout: ImageLayout::PresentSrc,
                 }
             },

@@ -406,13 +406,15 @@ fn create_render_pass(
                         store: Store,
                         format: color_format,
                         samples: 1,
+                        initial_layout: ImageLayout::ColorAttachmentOptimal,
+                        final_layout: ImageLayout::ColorAttachmentOptimal,
                     },
                     swapchain_color: {
                         load: DontCare,
                         store: Store,
                         format: color_format,
                         samples: 1,
-                        initial_layout: ImageLayout::PresentSrc,
+                        initial_layout: ImageLayout::Undefined,
                         final_layout: ImageLayout::PresentSrc,
                     }
                 },
@@ -434,13 +436,15 @@ fn create_render_pass(
                         store: Store,
                         format: color_format,
                         samples: msaa_samples,
+                        initial_layout: ImageLayout::ColorAttachmentOptimal,
+                        final_layout: ImageLayout::ColorAttachmentOptimal,
                     },
                     swapchain_color: {
                         load: DontCare,
                         store: Store,
                         format: color_format,
                         samples: 1,
-                        initial_layout: ImageLayout::PresentSrc,
+                        initial_layout: ImageLayout::Undefined,
                         final_layout: ImageLayout::PresentSrc,
                     }
                 },
