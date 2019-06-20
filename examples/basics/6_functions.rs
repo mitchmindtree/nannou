@@ -53,6 +53,6 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
 }
 
 fn view(_app: &App, _model: &Model, frame: Frame) -> Frame {
-    frame.clear(DARK_CHARCOAL);
+    frame.clear(DIMGRAY);
     frame
 }

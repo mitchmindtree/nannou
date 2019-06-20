@@ -42,7 +42,7 @@ fn event(_app: &App, model: &mut Model, event: WindowEvent) {
 
 fn view(_app: &App, _model: &Model, frame: Frame) -> Frame {
     // Color the window gray.
-    frame.clear(DARK_CHARCOAL);
+    frame.clear(DIMGRAY);
     // Return the drawn frame.
     frame
 }
