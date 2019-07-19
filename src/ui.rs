@@ -440,7 +440,7 @@ impl RenderTarget {
     // Initialise a new render target.
     fn new(window: &Window) -> Result<Self, RenderTargetCreationError> {
         let device = window.swapchain_device().clone();
-        let color_format = window.swapchain().format();
+        let color_format = crate::frame::COLOR_FORMAT;
         let msaa_samples = window.msaa_samples();
         let render_pass = create_render_pass(device, color_format, DEPTH_FORMAT, msaa_samples)?;
         let images = RenderPassImages::new(window)?;

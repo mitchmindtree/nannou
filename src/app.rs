@@ -957,7 +957,7 @@ impl App {
             Some(window) => window,
         };
         let device = window.swapchain.swapchain.device().clone();
-        let color_format = window.swapchain.swapchain.format();
+        let color_format = crate::frame::COLOR_FORMAT;
         let draw = self.draw_state.draw.borrow_mut();
         draw.reset();
         if self.draw_state.renderer.borrow().is_none() {
