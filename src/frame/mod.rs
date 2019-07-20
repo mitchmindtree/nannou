@@ -12,7 +12,7 @@ pub mod raw;
 pub use self::raw::{AddCommands, RawFrame};
 
 /// The vulkan color format used by the intermediary linear sRGBA image.
-pub const COLOR_FORMAT: vk::Format = vk::Format::B8G8R8A8Unorm;
+pub const COLOR_FORMAT: vk::Format = vk::Format::R32G32B32A32Sfloat;
 
 /// A **Frame** to which the user can draw graphics before it is presented to the display.
 ///
