@@ -187,6 +187,14 @@ struct LoopState {
     loop_start: Instant,
     last_update: Instant,
     total_updates: u64,
+    sleep_error_tracker: SleepErrorTracker,
+}
+
+// Tracks the error incurred by winit's `WaitUntil` control flow in order to attempt to compensate.
+#[derive(Default)]
+struct SleepErrorTracker {
+    sample_count: u64,
+    avg_error_secs: f64,
 }
 
 /// The mode in which the **App** is currently running the event loop and emitting `Update` events.
@@ -1030,6 +1038,7 @@ fn run_loop<M, E>(
         loop_start,
         last_update: loop_start,
         total_updates: 0,
+        sleep_error_tracker: Default::default(),
     };
 
     // Run the event loop.
@@ -1122,7 +1131,9 @@ fn run_loop<M, E>(
                 let mut command_buffer = None;
 
                 if let Some(model) = model.as_ref() {
+                    let sample = std::time::Instant::now();
                     let swap_chain_output = swap_chain.get_next_texture();
+                    println!("get_next_texture duration: {:?}", sample.elapsed());
                     let swap_chain_texture = &swap_chain_output.view;
 
                     // Borrow the window now that we don't need it mutably until setting the render
