@@ -50,9 +50,9 @@ impl TextureFormatConverter {
         let bind_group = bind_group(device, &bind_group_layout, src_texture, &sampler);
 
         // Create the vertex buffer.
-        let vertex_buffer = device
-            .create_buffer_mapped(VERTICES.len(), wgpu::BufferUsage::VERTEX)
-            .fill_from_slice(&VERTICES[..]);
+        let vertices_bytes = crate::wgpu::slice_as_bytes(&VERTICES[..]);
+        let vertex_buffer =
+            device.create_buffer_with_data(vertices_bytes, wgpu::BufferUsage::VERTEX);
 
         TextureFormatConverter {
             _vs_mod: vs_mod,

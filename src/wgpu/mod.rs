@@ -40,10 +40,12 @@ pub use wgpu::{
     TextureViewDimension, VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat,
 };
 
+/// Nannou's default wgpu backend selection.
+pub const DEFAULT_BACKEND: BackendBit = BackendBit::PRIMARY;
+
 /// The default set of options used to request a `wgpu::Adapter` when creating windows.
 pub const DEFAULT_ADAPTER_REQUEST_OPTIONS: RequestAdapterOptions = RequestAdapterOptions {
     power_preference: PowerPreference::Default,
-    backends: BackendBit::PRIMARY,
 };
 
 /// The default set of `Extensions` used within the `default_device_descriptor()` function.
@@ -106,4 +108,13 @@ pub fn resolve_texture(
         depth_stencil_attachment: None,
     };
     let _render_pass = encoder.begin_render_pass(&render_pass_desc);
+}
+
+/// Useful for reading a slice of elements as raw bytes, ready for upload to the GPU.
+pub fn slice_as_bytes<T>(s: &[T]) -> &[u8] {
+    let len = std::mem::size_of::<T>() * s.len();
+    let ptr = s.as_ptr() as *const u8;
+    unsafe {
+        std::slice::from_raw_parts(ptr, len)
+    }
 }

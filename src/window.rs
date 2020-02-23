@@ -31,6 +31,7 @@ pub struct Builder<'app> {
     title_was_set: bool,
     swap_chain_builder: SwapChainBuilder,
     request_adapter_opts: Option<wgpu::RequestAdapterOptions>,
+    backend: Option<wgpu::BackendBit>,
     device_desc: Option<wgpu::DeviceDescriptor>,
     user_functions: UserFunctions,
     msaa_samples: Option<u32>,
@@ -343,6 +344,7 @@ impl<'app> Builder<'app> {
             title_was_set: false,
             swap_chain_builder: Default::default(),
             request_adapter_opts: None,
+            backend: None,
             device_desc: None,
             user_functions: Default::default(),
             msaa_samples: None,
@@ -365,6 +367,12 @@ impl<'app> Builder<'app> {
     /// set of desired properties for the requested physical device.
     pub fn request_adapter_options(mut self, opts: wgpu::RequestAdapterOptions) -> Self {
         self.request_adapter_opts = Some(opts);
+        self
+    }
+
+    /// The WGPU backend selection flags.
+    pub fn backend(mut self, backend: wgpu::BackendBit) -> Self {
+        self.backend = Some(backend);
         self
     }
 
@@ -646,6 +654,7 @@ impl<'app> Builder<'app> {
             title_was_set,
             swap_chain_builder,
             request_adapter_opts,
+            backend,
             device_desc,
             user_functions,
             msaa_samples,
@@ -739,9 +748,10 @@ impl<'app> Builder<'app> {
         // Request the adapter.
         let request_adapter_opts =
             request_adapter_opts.unwrap_or(wgpu::DEFAULT_ADAPTER_REQUEST_OPTIONS);
+        let backend = backend.unwrap_or(wgpu::DEFAULT_BACKEND);
         let adapter = app
             .wgpu_adapters()
-            .get_or_request(request_adapter_opts)
+            .get_or_request(request_adapter_opts, backend)
             .ok_or(BuildError::NoAvailableAdapter)?;
 
         // Instantiate the logical device.
@@ -816,6 +826,7 @@ impl<'app> Builder<'app> {
             title_was_set,
             device_desc,
             request_adapter_opts,
+            backend,
             swap_chain_builder,
             user_functions,
             msaa_samples,
@@ -827,6 +838,7 @@ impl<'app> Builder<'app> {
             title_was_set,
             device_desc,
             request_adapter_opts,
+            backend,
             swap_chain_builder,
             user_functions,
             msaa_samples,

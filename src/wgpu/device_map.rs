@@ -22,6 +22,7 @@ pub struct AdapterMap {
 #[derive(Clone, Debug)]
 pub struct AdapterMapKey {
     options: wgpu::RequestAdapterOptions,
+    backend: wgpu::BackendBit,
 }
 
 /// A single active adapter and its map of connected devices.
@@ -69,8 +70,9 @@ impl AdapterMap {
     pub fn get_or_request(
         &self,
         options: wgpu::RequestAdapterOptions,
+        backend: wgpu::BackendBit,
     ) -> Option<Arc<ActiveAdapter>> {
-        let key = AdapterMapKey { options };
+        let key = AdapterMapKey { options, backend };
         let mut map = self
             .map
             .lock()
@@ -78,7 +80,7 @@ impl AdapterMap {
         if let Some(adapter) = map.get(&key) {
             return Some(adapter.clone());
         }
-        if let Some(adapter) = wgpu::Adapter::request(&key.options) {
+        if let Some(adapter) = wgpu::Adapter::request(&key.options, backend) {
             let device_map = Default::default();
             let adapter = Arc::new(ActiveAdapter {
                 adapter,
@@ -96,14 +98,18 @@ impl AdapterMap {
     /// active adapter exists.
     ///
     /// Returns `None` if there are no available adapters that meet the specified options.
-    pub fn request(&self, options: wgpu::RequestAdapterOptions) -> Option<Arc<ActiveAdapter>> {
-        let adapter = wgpu::Adapter::request(&options)?;
+    pub fn request(
+        &self,
+        options: wgpu::RequestAdapterOptions,
+        backend: wgpu::BackendBit,
+    ) -> Option<Arc<ActiveAdapter>> {
+        let adapter = wgpu::Adapter::request(&options, backend)?;
         let device_map = Default::default();
         let adapter = Arc::new(ActiveAdapter {
             adapter,
             device_map,
         });
-        let key = AdapterMapKey { options };
+        let key = AdapterMapKey { options, backend };
         let mut map = self
             .map
             .lock()
@@ -242,7 +248,7 @@ fn eq_request_adapter_options(
     a: &wgpu::RequestAdapterOptions,
     b: &wgpu::RequestAdapterOptions,
 ) -> bool {
-    a.power_preference == b.power_preference && a.backends == b.backends
+    a.power_preference == b.power_preference
 }
 
 // NOTE: This should be updated as fields are added to the `wgpu::DeviceDescriptor` type.
@@ -257,7 +263,6 @@ where
     H: Hasher,
 {
     opts.power_preference.hash(state);
-    opts.backends.hash(state);
 }
 
 // NOTE: This should be updated as fields are added to the `wgpu::DeviceDescriptor` type.

@@ -209,14 +209,13 @@ impl Renderer {
         let map_vertex = |v| Vertex::from_mesh_vertex(v, img_w as _, img_h as _, scale_factor);
         vertices.clear();
         vertices.extend(draw.raw_vertices().map(map_vertex));
-        let vertex_buffer = device
-            .create_buffer_mapped(vertices.len(), wgpu::BufferUsage::VERTEX)
-            .fill_from_slice(&vertices[..]);
+        let vertices_bytes = crate::wgpu::slice_as_bytes(&vertices[..]);
+        let vertex_buffer =
+            device.create_buffer_with_data(vertices_bytes, wgpu::BufferUsage::VERTEX);
         indices.clear();
         indices.extend(draw.inner_mesh().indices().iter().map(|&u| u as u32));
-        let index_buffer = device
-            .create_buffer_mapped(indices.len(), wgpu::BufferUsage::INDEX)
-            .fill_from_slice(&indices[..]);
+        let indices_bytes = crate::wgpu::slice_as_bytes(&indices[..]);
+        let index_buffer = device.create_buffer_with_data(indices_bytes, wgpu::BufferUsage::INDEX);
 
         let mut render_pass = encoder.begin_render_pass(&render_pass_desc);
         render_pass.set_pipeline(render_pipeline);

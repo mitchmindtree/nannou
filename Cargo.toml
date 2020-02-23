@@ -15,9 +15,9 @@ default = ["notosans"]
 
 [dependencies]
 cgmath = { version = "0.17", features = ["serde"] }
-conrod_core = { git = "https://github.com/mitchmindtree/conrod", branch = "conrod_wgpu" }
-conrod_wgpu = { git = "https://github.com/mitchmindtree/conrod", branch = "conrod_wgpu" }
-conrod_winit = { git = "https://github.com/mitchmindtree/conrod", branch = "conrod_wgpu" }
+conrod_core = { git = "https://github.com/mitchmindtree/conrod", branch = "conrod_wgpu_master" }
+conrod_wgpu = { git = "https://github.com/mitchmindtree/conrod", branch = "conrod_wgpu_master" }
+conrod_winit = { git = "https://github.com/mitchmindtree/conrod", branch = "conrod_wgpu_master" }
 daggy = "0.6"
 find_folder = "0.3"
 image = "0.22"
@@ -33,7 +33,7 @@ serde_derive = "1"
 serde_json = "1"
 toml = "0.5"
 walkdir = "2"
-wgpu = "0.4"
+wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", branch = "master" }
 winit = "0.21"
 
 [dev-dependencies]
