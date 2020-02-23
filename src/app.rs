@@ -186,6 +186,7 @@ struct LoopState {
     updates_since_event: usize,
     loop_start: Instant,
     last_update: Instant,
+    last_swap_chain_texture_acqured: Option<Instant>,
     total_updates: u64,
     sleep_error_tracker: SleepErrorTracker,
 }
@@ -1037,6 +1038,7 @@ fn run_loop<M, E>(
         updates_since_event: 0,
         loop_start,
         last_update: loop_start,
+        last_swap_chain_texture_acqured: None,
         total_updates: 0,
         sleep_error_tracker: Default::default(),
     };
@@ -1073,7 +1075,7 @@ fn run_loop<M, E>(
                         }
 
                         LoopMode::Rate { update_interval } => {
-                            let next_update = loop_state.last_update + update_interval;
+                            let next_update = loop_state.last_swap_chain_texture_acqured.unwrap_or(loop_state.last_update) + update_interval;
                             if now >= next_update {
                                 do_update(&mut loop_state);
                             }
@@ -1133,7 +1135,8 @@ fn run_loop<M, E>(
                 if let Some(model) = model.as_ref() {
                     let sample = std::time::Instant::now();
                     let swap_chain_output = swap_chain.get_next_texture();
-                    println!("get_next_texture duration: {:?}", sample.elapsed());
+                    println!("get_next_texture   since last: {:?}    duration: {:?}", loop_state.last_swap_chain_texture_acqured.map(|t| t.elapsed()), sample.elapsed());
+                    loop_state.last_swap_chain_texture_acqured = Some(std::time::Instant::now());
                     let swap_chain_texture = &swap_chain_output.view;
 
                     // Borrow the window now that we don't need it mutably until setting the render
@@ -1303,7 +1306,7 @@ fn run_loop<M, E>(
             }
 
             LoopMode::Rate { update_interval } => {
-                let next_update = loop_state.last_update + update_interval;
+                let next_update = loop_state.last_swap_chain_texture_acqured.unwrap_or(loop_state.last_update) + update_interval;
                 if now < next_update {
                     ControlFlow::WaitUntil(next_update)
                 } else {
