@@ -30,7 +30,7 @@ pub struct RenderPipelineBuilder<'a> {
     fs_entry_point: &'a str,
     primitive: wgpu::PrimitiveState,
     color_state: Option<wgpu::ColorTargetState>,
-    color_states: &'a [wgpu::ColorTargetState],
+    color_states: &'a [Option<wgpu::ColorTargetState>],
     depth_stencil: Option<wgpu::DepthStencilState>,
     vertex_buffers: Vec<wgpu::VertexBufferLayout<'static>>,
     multisample: wgpu::MultisampleState,
@@ -540,12 +540,10 @@ fn build(
         buffers: &vertex_buffers[..],
     };
 
-    let mut single_color_state = [RenderPipelineBuilder::DEFAULT_COLOR_STATE];
+    let mut single_color_state = [Some(RenderPipelineBuilder::DEFAULT_COLOR_STATE)];
     let color_states = match (fs_mod.is_some(), color_states.is_empty()) {
         (true, true) => {
-            if let Some(cs) = color_state {
-                single_color_state[0] = cs;
-            }
+            single_color_state[0] = color_state;
             &single_color_state[..]
         }
         (true, false) => color_states,

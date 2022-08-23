@@ -387,8 +387,8 @@ impl Renderer {
         // Load shader modules.
         let vs_desc = wgpu::include_wgsl!("shaders/vs.wgsl");
         let fs_desc = wgpu::include_wgsl!("shaders/fs.wgsl");
-        let vs_mod = device.create_shader_module(&vs_desc);
-        let fs_mod = device.create_shader_module(&fs_desc);
+        let vs_mod = device.create_shader_module(vs_desc);
+        let fs_mod = device.create_shader_module(fs_desc);
 
         // Create the glyph cache texture.
         let text_sampler_desc = wgpu::SamplerBuilder::new().into_descriptor();
@@ -1047,7 +1047,10 @@ fn create_uniform_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLay
         .build(device)
 }
 
-fn create_text_bind_group_layout(device: &wgpu::Device, sampler_ty: wgpu::SamplerBindingType) -> wgpu::BindGroupLayout {
+fn create_text_bind_group_layout(
+    device: &wgpu::Device,
+    sampler_ty: wgpu::SamplerBindingType,
+) -> wgpu::BindGroupLayout {
     wgpu::BindGroupLayoutBuilder::new()
         .sampler(wgpu::ShaderStages::FRAGMENT, sampler_ty)
         .texture(

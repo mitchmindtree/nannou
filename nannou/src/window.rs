@@ -330,8 +330,9 @@ impl SurfaceConfigurationBuilder {
         let usage = self.usage.unwrap_or(Self::DEFAULT_USAGE);
         let format = self
             .format
-            .or_else(|| surface.get_preferred_format(&adapter))
+            .or_else(|| surface.get_supported_formats(&adapter).get(0).cloned())
             .unwrap_or(Self::DEFAULT_FORMAT);
+
         let present_mode = self.present_mode.unwrap_or(Self::DEFAULT_PRESENT_MODE);
         wgpu::SurfaceConfiguration {
             usage,
