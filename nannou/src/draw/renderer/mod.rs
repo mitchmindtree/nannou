@@ -392,8 +392,7 @@ impl Renderer {
 
         // Create the glyph cache texture.
         let text_sampler_desc = wgpu::SamplerBuilder::new().into_descriptor();
-        let text_sampler_filtering = wgpu::sampler_filtering(&text_sampler_desc);
-        let text_sampler_binding_ty = sampler_binding_type(text_sampler_filtering);
+        let text_sampler_binding_ty = wgpu::sampler_filtering(&text_sampler_desc);
         let text_sampler = device.create_sampler(&text_sampler_desc);
         let glyph_cache_texture = wgpu::TextureBuilder::new()
             .size(glyph_cache_size)
@@ -647,8 +646,7 @@ impl Renderer {
                         curr_pipeline_id = Some(new_pipeline_id);
                         let color_blend = curr_ctxt.blend.color.clone();
                         let alpha_blend = curr_ctxt.blend.alpha.clone();
-                        let sampler_filtering = wgpu::sampler_filtering(&curr_ctxt.sampler);
-                        let sampler_binding_ty = sampler_binding_type(sampler_filtering);
+                        let sampler_binding_ty = wgpu::sampler_filtering(&curr_ctxt.sampler);
                         new_pipeline_ids.insert(
                             new_pipeline_id,
                             (color_blend, alpha_blend, sampler_binding_ty),
@@ -1060,13 +1058,6 @@ fn create_text_bind_group_layout(
             Renderer::GLYPH_CACHE_TEXTURE_FORMAT.describe().sample_type,
         )
         .build(device)
-}
-
-fn sampler_binding_type(filtering: bool) -> wgpu::SamplerBindingType {
-    match filtering {
-        true => wgpu::SamplerBindingType::Filtering,
-        false => wgpu::SamplerBindingType::NonFiltering,
-    }
 }
 
 fn create_texture_bind_group_layout(
