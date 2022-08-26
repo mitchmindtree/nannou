@@ -11,6 +11,7 @@ edition = "2018"
 
 [dependencies]
 async-std = "1.10.0"
+futures-intrusive = "0.4"
 image = { version = "0.23", optional = true }
 instant = { version = "0.1.9", optional = true }
 num_cpus = { version = "1", optional = true }

@@ -190,7 +190,9 @@ pub fn create_pipeline_layout<'p>(
 /// assists wgpu with validation.
 pub fn sampler_filtering(desc: &SamplerDescriptor) -> SamplerBindingType {
     match (desc.mag_filter, desc.min_filter, desc.mipmap_filter) {
-        (FilterMode::Nearest, FilterMode::Nearest, FilterMode::Nearest) => SamplerBindingType::NonFiltering,
+        (FilterMode::Nearest, FilterMode::Nearest, FilterMode::Nearest) => {
+            SamplerBindingType::NonFiltering
+        }
         _ => SamplerBindingType::Filtering,
     }
 }

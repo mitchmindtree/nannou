@@ -311,8 +311,11 @@ impl wgpu::RowPaddedBuffer {
     /// polled. You should *not* rely on the being ready immediately.
     pub async fn read<'b>(&'b self) -> Result<ImageReadMapping<'b>, wgpu::BufferAsyncError> {
         let slice = self.buffer.slice(..);
-        
-        slice.map_async(wgpu::MapMode::Read, |_| ());
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        receiver.receive().await.expect("gpu channel closed unexpectadly")?;
+
         Ok(wgpu::ImageReadMapping {
             buffer: self,
             // fun exercise:
