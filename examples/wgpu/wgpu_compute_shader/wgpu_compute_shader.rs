@@ -158,6 +158,7 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
     buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
 
+    // We need to poll to start execution otherwise the block_on below will never complete. 
     device.poll(wgpu::Maintain::Wait);
 
     // Spawn a future that reads the result of the compute pass.
@@ -185,36 +186,6 @@ fn update(app: &App, model: &mut Model, _update: Update) {
         }
     };
     async_std::task::block_on(future);
-    //async_std::task::spawn(future);
-
-    // Spawn a future that reads the result of the compute pass.
-    // let oscillators = model.oscillators.clone();
-    // let future = async move {
-    //     let slice = read_buffer.slice(..);
-    //     if let Ok(_) = slice.map_async(wgpu::MapMode::Read).await {
-    //         if let Ok(mut oscillators) = oscillators.lock() {
-    //             let bytes = &slice.get_mapped_range()[..];
-    //             // "Cast" the slice of bytes to a slice of floats as required.
-    //             let floats = {
-    //                 let len = bytes.len() / std::mem::size_of::<f32>();
-    //                 let ptr = bytes.as_ptr() as *const f32;
-    //                 unsafe { std::slice::from_raw_parts(ptr, len) }
-    //             };
-    //             oscillators.copy_from_slice(floats);
-    //         }
-    //     }
-    // };
-    // async_std::task::spawn(future);
-
-    // Check for resource cleanups and mapping callbacks.
-    //
-    // Note that this line is not necessary in our case, as the device we are using already gets
-    // polled when nannou submits the command buffer for drawing and presentation after `view`
-    // completes. If we were to use a standalone device to create our buffer and perform our
-    // compute (rather than the device requested during window creation), calling `poll` regularly
-    // would be a must.
-    //
-    // device.poll(false);
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
