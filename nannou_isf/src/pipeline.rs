@@ -549,8 +549,7 @@ impl IsfPipeline {
 
         // Create the sampler.
         let sampler_desc = wgpu::SamplerBuilder::new().into_descriptor();
-        let sampler_filtering = wgpu::sampler_filtering(&sampler_desc);
-        let sampler_binding_type = sampler_binding_type(sampler_filtering);
+        let sampler_binding_type = wgpu::sampler_filtering(&sampler_desc);
         let sampler = device.create_sampler(&sampler_desc);
 
         // Prepare the bind group layouts.
@@ -998,13 +997,6 @@ fn create_black_texture(
 
 fn default_isf_texture_usage() -> wgpu::TextureUsages {
     wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING
-}
-
-fn sampler_binding_type(filtering: bool) -> wgpu::SamplerBindingType {
-    match filtering {
-        true => wgpu::SamplerBindingType::Filtering,
-        false => wgpu::SamplerBindingType::NonFiltering,
-    }
 }
 
 fn read_isf_from_path(path: &Path) -> Result<isf::Isf, IsfError> {
