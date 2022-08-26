@@ -1,5 +1,5 @@
 use nannou::prelude::*;
-use nannou_egui::{epi::App as EguiApp, Egui};
+use nannou_egui::Egui;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -7,11 +7,10 @@ fn main() {
 
 struct Model {
     egui: Egui,
-    egui_demo_app: egui_demo_lib::WrapApp,
+    egui_demo_windows: egui_demo_lib::DemoWindows,
 }
 
 fn model(app: &App) -> Model {
-    println!("model");
     app.set_loop_mode(LoopMode::wait());
     let w_id = app
         .new_window()
@@ -20,15 +19,10 @@ fn model(app: &App) -> Model {
         .build()
         .unwrap();
     let window = app.window(w_id).unwrap();
-    let mut egui = Egui::from_window(&window);
-    let mut egui_demo_app = egui_demo_lib::WrapApp::default();
-    let proxy = app.create_proxy();
-    egui.do_frame_with_epi_frame(proxy, |ctx, epi_frame| {
-        egui_demo_app.setup(&ctx, epi_frame, None);
-    });
+    let egui = Egui::from_window(&window);
     Model {
         egui,
-        egui_demo_app,
+        egui_demo_windows: Default::default(),
     }
 }
 
@@ -36,21 +30,21 @@ fn raw_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event:
     model.egui.handle_raw_event(event);
 }
 
-fn update(app: &App, model: &mut Model, update: Update) {
-    println!("update");
+fn update(_app: &App, model: &mut Model, update: Update) {
     let Model {
         ref mut egui,
-        ref mut egui_demo_app,
+        ref mut egui_demo_windows,
         ..
     } = *model;
     egui.set_elapsed_time(update.since_start);
-    let proxy = app.create_proxy();
-    egui.do_frame_with_epi_frame(proxy, |ctx, frame| {
-        egui_demo_app.update(&ctx, frame);
-    });
+    let ctx = egui.begin_frame();
+    egui_demo_windows.ui(&ctx);
 }
 
-fn view(_app: &App, model: &Model, frame: Frame) {
-    println!("view");
-    model.egui.draw_to_frame(&frame).unwrap();
+fn view(app: &App, model: &Model, frame: Frame) {
+    let draw = app.draw();
+    draw.background().color(BLACK);
+    draw.to_frame(app, &frame).unwrap();
+    
+    model.egui.draw_to_frame(&frame);
 }
