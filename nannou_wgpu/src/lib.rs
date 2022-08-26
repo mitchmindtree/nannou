@@ -117,7 +117,7 @@ pub fn shader_from_spirv_bytes(
         label: Some("nannou_shader_module"),
         source,
     };
-    device.create_shader_module(&desc)
+    device.create_shader_module(desc)
 }
 
 /// Adds a simple render pass command to the given encoder that simply clears the given texture
@@ -188,10 +188,10 @@ pub fn create_pipeline_layout<'p>(
 ///
 /// This is used to determine the `SamplerBindingType` for the sampler binding variant which
 /// assists wgpu with validation.
-pub fn sampler_filtering(desc: &SamplerDescriptor) -> bool {
+pub fn sampler_filtering(desc: &SamplerDescriptor) -> SamplerBindingType {
     match (desc.mag_filter, desc.min_filter, desc.mipmap_filter) {
-        (FilterMode::Nearest, FilterMode::Nearest, FilterMode::Nearest) => false,
-        _ => true,
+        (FilterMode::Nearest, FilterMode::Nearest, FilterMode::Nearest) => SamplerBindingType::NonFiltering,
+        _ => SamplerBindingType::Filtering,
     }
 }
 

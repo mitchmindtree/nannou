@@ -55,11 +55,7 @@ impl Reshaper {
 
         // Create the sampler for sampling from the source texture.
         let sampler_desc = wgpu::SamplerBuilder::new().into_descriptor();
-        let sampler_filtering = wgpu::sampler_filtering(&sampler_desc);
-        let sampler_binding_ty = match sampler_filtering {
-            true => wgpu::SamplerBindingType::Filtering,
-            false => wgpu::SamplerBindingType::NonFiltering,
-        };
+        let sampler_binding_ty = wgpu::sampler_filtering(&sampler_desc);
         let sampler = device.create_sampler(&sampler_desc);
 
         // Create the render pipeline.
