@@ -78,8 +78,8 @@ fn model(app: &App) -> Model {
 
     let vs_desc = wgpu::include_wgsl!("shaders/vs.wgsl");
     let fs_desc = wgpu::include_wgsl!("shaders/fs.wgsl");
-    let vs_mod = device.create_shader_module(&vs_desc);
-    let fs_mod = device.create_shader_module(&fs_desc);
+    let vs_mod = device.create_shader_module(vs_desc);
+    let fs_mod = device.create_shader_module(fs_desc);
 
     let texture_array = {
         // The wgpu device queue used to load the image data.
@@ -95,11 +95,11 @@ fn model(app: &App) -> Model {
 
     // Create the sampler for sampling from the source texture.
     let sampler_desc = wgpu::SamplerBuilder::new().into_descriptor();
-    let sampler_filtering = wgpu::sampler_filtering(&sampler_desc);
+    let sampler_binding_ty = wgpu::sampler_filtering(&sampler_desc);
     let sampler = device.create_sampler(&sampler_desc);
 
     let bind_group_layout =
-        create_bind_group_layout(device, texture_view.sample_type(), sampler_filtering);
+        create_bind_group_layout(device, texture_view.sample_type(), sampler_binding_ty);
     let bind_group = create_bind_group(device, &bind_group_layout, &texture_view, &sampler);
     let pipeline_layout = create_pipeline_layout(device, &bind_group_layout);
     let render_pipeline = create_render_pipeline(
@@ -204,7 +204,7 @@ fn load_images(dir: &Path) -> (Vec<(PathBuf, RgbaImage)>, (u32, u32)) {
 fn create_bind_group_layout(
     device: &wgpu::Device,
     texture_sample_type: wgpu::TextureSampleType,
-    sampler_filtering: bool,
+    sampler_binding_ty: wgpu::SamplerBindingType,
 ) -> wgpu::BindGroupLayout {
     wgpu::BindGroupLayoutBuilder::new()
         .texture(
@@ -213,7 +213,7 @@ fn create_bind_group_layout(
             wgpu::TextureViewDimension::D2,
             texture_sample_type,
         )
-        .sampler(wgpu::ShaderStages::FRAGMENT, sampler_filtering)
+        .sampler(wgpu::ShaderStages::FRAGMENT, sampler_binding_ty)
         .build(device)
 }
 

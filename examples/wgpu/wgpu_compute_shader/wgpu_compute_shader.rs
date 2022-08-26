@@ -43,7 +43,7 @@ fn model(app: &App) -> Model {
 
     // Create the compute shader module.
     let cs_desc = wgpu::include_wgsl!("shaders/cs.wgsl");
-    let cs_mod = device.create_shader_module(&cs_desc);
+    let cs_mod = device.create_shader_module(cs_desc);
 
     // Create the buffer that will store the result of our compute operation.
     let oscillator_buffer_size =
@@ -140,7 +140,7 @@ fn update(app: &App, model: &mut Model, _update: Update) {
         let mut cpass = encoder.begin_compute_pass(&pass_desc);
         cpass.set_pipeline(&compute.pipeline);
         cpass.set_bind_group(0, &compute.bind_group, &[]);
-        cpass.dispatch(OSCILLATOR_COUNT as u32, 1, 1);
+        cpass.dispatch_workgroups(OSCILLATOR_COUNT as u32, 1, 1);
     }
     encoder.copy_buffer_to_buffer(
         &compute.oscillator_buffer,
@@ -153,13 +153,26 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     // Submit the compute pass to the device's queue.
     window.queue().submit(Some(encoder.finish()));
 
+    
+    let buffer_slice = read_buffer.slice(..);
+    // Sets the buffer up for mapping, sending over the result of the mapping back to us when it is finished.
+    let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+    buffer_slice.map_async(wgpu::MapMode::Read, move |v| {
+        sender.send(v);//.unwrap()
+    });
+
+    device.poll(wgpu::Maintain::Wait);
+
     // Spawn a future that reads the result of the compute pass.
     let oscillators = model.oscillators.clone();
     let future = async move {
-        let slice = read_buffer.slice(..);
-        if let Ok(_) = slice.map_async(wgpu::MapMode::Read).await {
+        println!("future");
+
+        // Awaits until `buffer_future` can be read from
+        if let Some(Ok(())) = receiver.receive().await {
             if let Ok(mut oscillators) = oscillators.lock() {
-                let bytes = &slice.get_mapped_range()[..];
+                // Gets contents of buffer
+                let bytes = &buffer_slice.get_mapped_range()[..];
                 // "Cast" the slice of bytes to a slice of floats as required.
                 let floats = {
                     let len = bytes.len() / std::mem::size_of::<f32>();
@@ -167,10 +180,39 @@ fn update(app: &App, model: &mut Model, _update: Update) {
                     unsafe { std::slice::from_raw_parts(ptr, len) }
                 };
                 oscillators.copy_from_slice(floats);
+
+                println!("sd");
+                // With the current interface, we have to make sure all mapped views are
+                // dropped before we unmap the buffer.
+                drop(bytes);
+                
             }
+        } else {
+            panic!("failed to run compute on gpu!")
         }
     };
-    async_std::task::spawn(future);
+    //async_std::task::spawn(future);
+    
+    //async_std::task::spawn(future);
+
+    // Spawn a future that reads the result of the compute pass.
+    // let oscillators = model.oscillators.clone();
+    // let future = async move {
+    //     let slice = read_buffer.slice(..);
+    //     if let Ok(_) = slice.map_async(wgpu::MapMode::Read).await {
+    //         if let Ok(mut oscillators) = oscillators.lock() {
+    //             let bytes = &slice.get_mapped_range()[..];
+    //             // "Cast" the slice of bytes to a slice of floats as required.
+    //             let floats = {
+    //                 let len = bytes.len() / std::mem::size_of::<f32>();
+    //                 let ptr = bytes.as_ptr() as *const f32;
+    //                 unsafe { std::slice::from_raw_parts(ptr, len) }
+    //             };
+    //             oscillators.copy_from_slice(floats);
+    //         }
+    //     }
+    // };
+    // async_std::task::spawn(future);
 
     // Check for resource cleanups and mapping callbacks.
     //
@@ -181,6 +223,7 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     // would be a must.
     //
     // device.poll(false);
+
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
