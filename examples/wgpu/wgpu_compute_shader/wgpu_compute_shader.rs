@@ -153,21 +153,16 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     // Submit the compute pass to the device's queue.
     window.queue().submit(Some(encoder.finish()));
 
-    
     let buffer_slice = read_buffer.slice(..);
     // Sets the buffer up for mapping, sending over the result of the mapping back to us when it is finished.
     let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-    buffer_slice.map_async(wgpu::MapMode::Read, move |v| {
-        sender.send(v);//.unwrap()
-    });
+    buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
 
     device.poll(wgpu::Maintain::Wait);
 
     // Spawn a future that reads the result of the compute pass.
     let oscillators = model.oscillators.clone();
     let future = async move {
-        println!("future");
-
         // Awaits until `buffer_future` can be read from
         if let Some(Ok(())) = receiver.receive().await {
             if let Ok(mut oscillators) = oscillators.lock() {
@@ -181,18 +176,15 @@ fn update(app: &App, model: &mut Model, _update: Update) {
                 };
                 oscillators.copy_from_slice(floats);
 
-                println!("sd");
                 // With the current interface, we have to make sure all mapped views are
                 // dropped before we unmap the buffer.
                 drop(bytes);
-                
             }
         } else {
             panic!("failed to run compute on gpu!")
         }
     };
-    //async_std::task::spawn(future);
-    
+    async_std::task::block_on(future);
     //async_std::task::spawn(future);
 
     // Spawn a future that reads the result of the compute pass.
@@ -223,7 +215,6 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     // would be a must.
     //
     // device.poll(false);
-
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
