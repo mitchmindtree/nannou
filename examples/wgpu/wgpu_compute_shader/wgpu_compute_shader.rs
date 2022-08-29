@@ -158,7 +158,7 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
     buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
 
-    // We need to poll to start execution otherwise the block_on below will never complete. 
+    // We need to poll to start execution otherwise the block_on below will never complete.
     device.poll(wgpu::Maintain::Wait);
 
     // Spawn a future that reads the result of the compute pass.

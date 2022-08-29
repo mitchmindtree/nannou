@@ -22,3 +22,8 @@ members = [
 
 # Required for wgpu v0.10 feature resolution.
 resolver = "2"
+
+[patch.crates-io]
+egui-wgpu = { git = 'https://github.com/JoshuaBatty/egui', branch = "josh/update_texture" }
+egui = { git = 'https://github.com/JoshuaBatty/egui', branch = "josh/update_texture" }
+epaint = { git = 'https://github.com/JoshuaBatty/egui', branch = "josh/update_texture" }

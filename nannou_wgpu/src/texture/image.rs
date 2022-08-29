@@ -314,7 +314,10 @@ impl wgpu::RowPaddedBuffer {
 
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
         slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-        receiver.receive().await.expect("gpu channel closed unexpectadly")?;
+        receiver
+            .receive()
+            .await
+            .expect("gpu channel closed unexpectadly")?;
 
         Ok(wgpu::ImageReadMapping {
             buffer: self,
