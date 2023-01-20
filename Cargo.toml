@@ -24,6 +24,11 @@ members = [
 resolver = "2"
 
 [patch.crates-io]
-egui-wgpu = { git = 'https://github.com/JoshuaBatty/egui', branch = "josh/update_texture" }
-egui = { git = 'https://github.com/JoshuaBatty/egui', branch = "josh/update_texture" }
-epaint = { git = 'https://github.com/JoshuaBatty/egui', branch = "josh/update_texture" }
+egui = { path = '../crates/egui/crates/egui' }
+egui-wgpu = { path = '../crates/egui/crates/egui-wgpu' }
+epaint = { path = '../crates/egui/crates/epaint' }
+
+# egui-wgpu = { git = 'https://github.com/emilk/egui', branch = "master" }
+# egui = { git = 'https://github.com/emilk/egui', branch = "master" }
+# epaint = { git = 'https://github.com/emilk/egui', branch = "master" }
+

@@ -4,7 +4,7 @@ pub use egui_wgpu;
 //pub use epi;
 
 use egui::{pos2, ClippedPrimitive, Context};
-use egui_wgpu::renderer::{RenderPass, ScreenDescriptor};
+use egui_wgpu::renderer::{Renderer as RenderPass, ScreenDescriptor};
 use nannou::{wgpu, winit::event::VirtualKeyCode, winit::event::WindowEvent::*};
 use std::{
     cell::RefCell,
@@ -306,7 +306,7 @@ impl Renderer {
         target_format: wgpu::TextureFormat,
         target_msaa_samples: u32,
     ) -> Self {
-        let render_pass = RenderPass::new(device, target_format, target_msaa_samples);
+        let render_pass = RenderPass::new(device, target_format, target_msaa_samples, 0);
         Self {
             render_pass,
             paint_jobs: Vec::new(),
@@ -348,9 +348,7 @@ impl Renderer {
             render_pass.free_texture(id);
         }
         render_pass.update_buffers(device, queue, &paint_jobs, &screen_descriptor);
-        render_pass.execute(encoder, dst_texture, &paint_jobs, &screen_descriptor, None);
-
-        //render_pass.remove_textures(textures_delta)
+        render_pass.render(encoder, dst_texture, &paint_jobs, &screen_descriptor, None);
     }
 
     /// Encodes a render pass for drawing the given context's texture to the given frame.
