@@ -1,17 +1,11 @@
 pub use egui;
 pub use egui::color_picker;
 pub use egui_wgpu;
-//pub use epi;
 
 use egui::{pos2, ClippedPrimitive, Context};
 use egui_wgpu::renderer::{Renderer as RenderPass, ScreenDescriptor};
 use nannou::{wgpu, winit::event::VirtualKeyCode, winit::event::WindowEvent::*};
-use std::{
-    cell::RefCell,
-    ops::Deref,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::{cell::RefCell, ops::Deref, time::Duration};
 
 /// All `egui`-related state for a single window.
 ///
@@ -51,8 +45,6 @@ pub struct FrameCtx<'a> {
     ended: bool,
 }
 
-struct RepaintSignal(Mutex<nannou::app::Proxy>);
-
 impl Egui {
     /// Construct the `Egui` from its parts.
     ///
@@ -66,11 +58,17 @@ impl Egui {
     pub fn new(
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
+        target_depth_format: Option<wgpu::TextureFormat>,
         target_msaa_samples: u32,
         window_scale_factor: f32,
         window_size_pixels: [u32; 2],
     ) -> Self {
-        let renderer = RefCell::new(Renderer::new(device, target_format, target_msaa_samples));
+        let renderer = RefCell::new(Renderer::new(
+            device,
+            target_format,
+            target_depth_format,
+            target_msaa_samples,
+        ));
         let input = Input::new(window_scale_factor, window_size_pixels);
         let context = Default::default();
         Self {
@@ -84,10 +82,18 @@ impl Egui {
     pub fn from_window(window: &nannou::window::Window) -> Self {
         let device = window.device();
         let format = nannou::Frame::TEXTURE_FORMAT;
+        let depth_format = None;
         let msaa_samples = window.msaa_samples();
         let scale_factor = window.scale_factor();
         let (w_px, h_px) = window.inner_size_pixels();
-        Self::new(device, format, msaa_samples, scale_factor, [w_px, h_px])
+        Self::new(
+            device,
+            format,
+            depth_format,
+            msaa_samples,
+            scale_factor,
+            [w_px, h_px],
+        )
     }
 
     /// Access to the inner `egui::Context`.
@@ -304,9 +310,10 @@ impl Renderer {
     pub fn new(
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
+        depth_format: Option<wgpu::TextureFormat>,
         target_msaa_samples: u32,
     ) -> Self {
-        let render_pass = RenderPass::new(device, target_format, target_msaa_samples, 0);
+        let render_pass = RenderPass::new(device, target_format, depth_format, target_msaa_samples);
         Self {
             render_pass,
             paint_jobs: Vec::new(),
@@ -318,8 +325,9 @@ impl Renderer {
     pub fn from_window(window: &nannou::window::Window) -> Self {
         let device = window.device();
         let format = nannou::Frame::TEXTURE_FORMAT;
+        let depth_format = None;
         let msaa_samples = window.msaa_samples();
-        Self::new(device, format, msaa_samples)
+        Self::new(device, format, depth_format, msaa_samples)
     }
 
     /// Encode a render pass for drawing the given context's texture to the given `dst_texture`.
@@ -333,7 +341,7 @@ impl Renderer {
         dst_texture: &wgpu::TextureView,
     ) {
         let textures_delta = std::mem::take(&mut self.textures_delta);
-        let render_pass = &mut self.render_pass;
+        let egui_render_pass = &mut self.render_pass;
         let paint_jobs = &self.paint_jobs;
         let size_in_pixels = dst_size_pixels;
         let pixels_per_point = dst_scale_factor;
@@ -342,13 +350,18 @@ impl Renderer {
             pixels_per_point,
         };
         for (id, image_delta) in &textures_delta.set {
-            render_pass.update_texture(device, queue, *id, image_delta);
+            egui_render_pass.update_texture(device, queue, *id, image_delta);
         }
         for id in &textures_delta.free {
-            render_pass.free_texture(id);
+            egui_render_pass.free_texture(id);
         }
-        render_pass.update_buffers(device, queue, &paint_jobs, &screen_descriptor);
-        render_pass.render(encoder, dst_texture, &paint_jobs, &screen_descriptor, None);
+        egui_render_pass.update_buffers(device, queue, encoder, &paint_jobs, &screen_descriptor);
+
+        // Encode the render pass.
+        let mut render_pass = wgpu::RenderPassBuilder::new()
+            .color_attachment(&dst_texture, |color| color)
+            .begin(encoder);
+        egui_render_pass.render(&mut render_pass, &paint_jobs, &screen_descriptor);
     }
 
     /// Encodes a render pass for drawing the given context's texture to the given frame.
