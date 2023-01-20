@@ -22,3 +22,6 @@ members = [
 
 # Required for wgpu v0.10 feature resolution.
 resolver = "2"
+
+[patch.crates-io]
+winit = { git = "https://github.com/spearman/winit", branch = "window-builder-introspection" }

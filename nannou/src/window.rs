@@ -275,6 +275,7 @@ pub(crate) struct TrackedState {
 /// See the builder methods for more details on each parameter.
 #[derive(Clone, Debug, Default)]
 pub struct SurfaceConfigurationBuilder {
+    pub alpha_mode: Option<wgpu::CompositeAlphaMode>,
     pub usage: Option<wgpu::TextureUsages>,
     pub format: Option<wgpu::TextureFormat>,
     pub present_mode: Option<wgpu::PresentMode>,
@@ -285,6 +286,7 @@ impl SurfaceConfigurationBuilder {
     pub const DEFAULT_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8UnormSrgb;
     pub const DEFAULT_PRESENT_MODE: wgpu::PresentMode = wgpu::PresentMode::Fifo;
     pub const DEFAULT_USAGE: wgpu::TextureUsages = wgpu::TextureUsages::RENDER_ATTACHMENT;
+    pub const DEFAULT_ALPHA_MODE: wgpu::CompositeAlphaMode = wgpu::CompositeAlphaMode::Auto;
 
     /// A new empty **SurfaceConfigurationBuilder** with all parameters set to `None`.
     pub fn new() -> Self {
@@ -320,6 +322,12 @@ impl SurfaceConfigurationBuilder {
         self
     }
 
+    /// Specifies how the alpha channel of the textures should be handled during compositing.
+    pub fn alpha_mode(mut self, alpha_mode: wgpu::CompositeAlphaMode) -> Self {
+        self.alpha_mode = Some(alpha_mode);
+        self
+    }
+
     /// Build the surface configuration.
     pub(crate) fn build(
         self,
@@ -334,7 +342,9 @@ impl SurfaceConfigurationBuilder {
             .unwrap_or(Self::DEFAULT_FORMAT);
 
         let present_mode = self.present_mode.unwrap_or(Self::DEFAULT_PRESENT_MODE);
+        let alpha_mode = self.alpha_mode.unwrap_or(Self::DEFAULT_ALPHA_MODE);
         wgpu::SurfaceConfiguration {
+            alpha_mode,
             usage,
             format,
             width: width_px,
@@ -771,17 +781,17 @@ impl<'app> Builder<'app> {
             target_os = "openbsd"
         ))]
         {
-            use winit::platform::unix::WindowBuilderExtUnix;
-            window = window.with_class("nannou".to_string(), "nannou".to_string());
+            use winit::platform::wayland::WindowBuilderExtWayland;
+            window = window.with_name("nannou".to_string(), "nannou".to_string());
         }
 
         // Set default dimensions in the case that none were given.
         let initial_window_size = window
-            .window
+            .window_attributes()
             .inner_size
             .or_else(|| {
                 window
-                    .window
+                    .window_attributes()
                     .fullscreen
                     .as_ref()
                     .and_then(|fullscreen| match fullscreen {
@@ -804,7 +814,7 @@ impl<'app> Builder<'app> {
             })
             .unwrap_or_else(|| {
                 let mut dim = DEFAULT_DIMENSIONS;
-                if let Some(min) = window.window.min_inner_size {
+                if let Some(min) = window.window_attributes().min_inner_size {
                     match min {
                         winit::dpi::Size::Logical(min) => {
                             dim.width = dim.width.max(min.width as _);
@@ -817,7 +827,7 @@ impl<'app> Builder<'app> {
                         }
                     }
                 }
-                if let Some(max) = window.window.max_inner_size {
+                if let Some(max) = window.window_attributes().max_inner_size {
                     match max {
                         winit::dpi::Size::Logical(max) => {
                             dim.width = dim.width.min(max.width as _);
@@ -835,13 +845,17 @@ impl<'app> Builder<'app> {
 
         // Use the `initial_window_size` as the default dimensions for the window if none
         // were specified.
-        if window.window.inner_size.is_none() && window.window.fullscreen.is_none() {
-            window.window.inner_size = Some(initial_window_size);
+        if window.window_attributes().inner_size.is_none()
+            && window.window_attributes().fullscreen.is_none()
+        {
+            window = window.with_inner_size(initial_window_size);
         }
 
         // Set a default minimum window size for configuring the surface.
-        if window.window.min_inner_size.is_none() && window.window.fullscreen.is_none() {
-            window.window.min_inner_size = Some(winit::dpi::Size::Physical(MIN_SC_PIXELS));
+        if window.window_attributes().min_inner_size.is_none()
+            && window.window_attributes().fullscreen.is_none()
+        {
+            window = window.with_min_inner_size(winit::dpi::Size::Physical(MIN_SC_PIXELS));
         }
 
         // Background must be initially cleared
@@ -849,7 +863,11 @@ impl<'app> Builder<'app> {
 
         let clear_color = clear_color.unwrap_or_else(|| {
             let mut color: wgpu::Color = Default::default();
-            color.a = if window.window.transparent { 0.0 } else { 1.0 };
+            color.a = if window.window_attributes().transparent {
+                0.0
+            } else {
+                1.0
+            };
             color
         });
 
@@ -1070,9 +1088,22 @@ impl<'app> Builder<'app> {
         self.map_window(|w| w.with_decorations(decorations))
     }
 
+    /// A window level groups windows with respect to their z-position.
+    ///
+    /// The relative ordering between windows in different window levels
+    /// is fixed. The z-order of a window within the same window level may change
+    /// dynamically on user interaction.
+    pub fn window_level(self, level: winit::window::WindowLevel) -> Self {
+        self.map_window(|w| w.with_window_level(level))
+    }
+
     /// Sets whether or not the window will always be on top of other windows.
     pub fn always_on_top(self, always_on_top: bool) -> Self {
-        self.map_window(|w| w.with_always_on_top(always_on_top))
+        let level = match always_on_top {
+            true => winit::window::WindowLevel::AlwaysOnTop,
+            false => winit::window::WindowLevel::Normal,
+        };
+        self.window_level(level)
     }
 
     /// Sets the window icon.
@@ -1314,9 +1345,20 @@ impl Window {
         self.window.set_decorations(decorations)
     }
 
+    /// Change the window level.
+    ///
+    /// This is just a hint too the OS, and the system could ignore it.
+    pub fn set_window_level(&self, level: winit::window::WindowLevel) {
+        self.window.set_window_level(level)
+    }
+
     /// Change whether or not the window will always be on top of other windows.
     pub fn set_always_on_top(&self, always_on_top: bool) {
-        self.window.set_always_on_top(always_on_top)
+        let level = match always_on_top {
+            true => winit::window::WindowLevel::AlwaysOnTop,
+            false => winit::window::WindowLevel::Normal,
+        };
+        self.set_window_level(level);
     }
 
     /// Sets the window icon. On Windows and X11, this is typically the small icon in the top-left
@@ -1371,17 +1413,12 @@ impl Window {
             .set_cursor_position(winit::dpi::LogicalPosition { x, y })
     }
 
-    /// Grabs the cursor, preventing it from leaving the window.
-    ///
-    /// ## Platform-specific
-    ///
-    /// - **macOS:** Locks the cursor in a fixed location.
-    /// - **Wayland:** Locks the cursor in a fixed location.
-    /// - **Android:** Has no effect.
-    /// - **iOS:** Always returns an Err.
-    /// - **Web:** Has no effect.
-    pub fn set_cursor_grab(&self, grab: bool) -> Result<(), winit::error::ExternalError> {
-        self.window.set_cursor_grab(grab)
+    /// The behaviour of cursor grabbing.
+    pub fn set_cursor_grab(
+        &self,
+        mode: winit::window::CursorGrabMode,
+    ) -> Result<(), winit::error::ExternalError> {
+        self.window.set_cursor_grab(mode)
     }
 
     /// Set the cursor's visibility.

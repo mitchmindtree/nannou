@@ -302,6 +302,34 @@ impl WindowEvent {
                 return None;
             }
 
+            winit::event::WindowEvent::Ime(_ime) => {
+                // TODO
+                return None;
+            }
+
+            winit::event::WindowEvent::TouchpadMagnify {
+                device_id: _,
+                delta: _,
+                phase: _,
+            } => {
+                // TODO
+                return None;
+            }
+
+            winit::event::WindowEvent::TouchpadRotate {
+                device_id: _,
+                delta: _,
+                phase: _,
+            } => {
+                // TODO
+                return None;
+            }
+
+            winit::event::WindowEvent::Occluded(_) => {
+                // TODO
+                return None;
+            }
+
             winit::event::WindowEvent::AxisMotion { .. }
             | winit::event::WindowEvent::ThemeChanged(_)
             | winit::event::WindowEvent::ScaleFactorChanged { .. } => {
