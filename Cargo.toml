@@ -22,13 +22,3 @@ members = [
 
 # Required for wgpu v0.10 feature resolution.
 resolver = "2"
-
-[patch.crates-io]
-egui = { path = '../crates/egui/crates/egui' }
-egui-wgpu = { path = '../crates/egui/crates/egui-wgpu' }
-epaint = { path = '../crates/egui/crates/epaint' }
-
-# egui-wgpu = { git = 'https://github.com/emilk/egui', branch = "master" }
-# egui = { git = 'https://github.com/emilk/egui', branch = "master" }
-# epaint = { git = 'https://github.com/emilk/egui', branch = "master" }
-
