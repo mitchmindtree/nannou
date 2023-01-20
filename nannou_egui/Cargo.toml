@@ -12,6 +12,7 @@ repository = "https://github.com/AlexEne/nannou_egui"
 readme = "../README.md"
 
 [dependencies]
+ecolor = "0.20"
 egui-wgpu = "0.20"
 egui = "0.20"
 winit = "0.27.5"

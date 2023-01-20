@@ -1,5 +1,5 @@
 use nannou::prelude::*;
-use nannou_egui::{egui, Egui};
+use nannou_egui::{ecolor, egui, Egui};
 
 const WIDTH: f32 = 640.0;
 const HEIGHT: f32 = 360.0;
@@ -75,7 +75,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
 }
 
 fn edit_hsv(ui: &mut egui::Ui, color: &mut Hsv) {
-    let mut egui_hsv = egui::color::Hsva::new(
+    let mut egui_hsv = ecolor::Hsva::new(
         color.hue.to_positive_radians() as f32 / (std::f32::consts::PI * 2.0),
         color.saturation,
         color.value,

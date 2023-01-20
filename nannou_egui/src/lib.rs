@@ -1,3 +1,4 @@
+pub use ecolor;
 pub use egui;
 pub use egui::color_picker;
 pub use egui_wgpu;
